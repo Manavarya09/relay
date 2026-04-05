@@ -43,7 +43,11 @@ impl Default for GeneralConfig {
 fn default_priority() -> Vec<String> {
     vec![
         "codex".into(),
+        "claude".into(),
+        "aider".into(),
         "gemini".into(),
+        "copilot".into(),
+        "opencode".into(),
         "ollama".into(),
         "openai".into(),
     ]

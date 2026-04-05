@@ -117,19 +117,26 @@ pub fn build_handoff(
     }
 
     // ── Instructions for agent ─────────────────────────────────
+    let deadline_note = if snapshot.deadline.is_some() {
+        "\nIMPORTANT: There is a DEADLINE. If the user asks you to continue, prioritise the current task."
+    } else { "" };
+
     let instructions = format!(
         "## INSTRUCTIONS\n\n\
-        You are continuing work that was started in a Claude Code session.\n\
-        The session was interrupted by a rate limit.\n\
-        Pick up EXACTLY where it left off. Do NOT re-explain context.\n\
-        The user is waiting — be efficient and direct.\n\
+        You have been given the full context from a Claude Code session.\n\
+        The context above shows what was being worked on, what decisions were made,\n\
+        what files were changed, and what the last state was.\n\
         \n\
-        Working directory: {}\n\
+        DO NOT immediately start working on anything.\n\
+        Instead, briefly confirm you have the context by saying something like:\n\
+        \"Context restored from your Claude session. I can see you were working on [brief summary]. What would you like me to do?\"\n\
+        \n\
+        Then WAIT for the user to tell you what to do next.\n\
+        \n\
+        Working directory: {}\
         {}",
         snapshot.project_dir,
-        if snapshot.deadline.is_some() {
-            "THERE IS A DEADLINE. Prioritise completing the current task."
-        } else { "" }
+        deadline_note
     );
     sections.push(instructions);
 

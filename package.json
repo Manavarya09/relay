@@ -1,6 +1,6 @@
 {
   "name": "@masyv/relay",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Relay — When Claude's rate limit hits, another agent picks up exactly where you left off. Captures session state and hands off to Codex, Gemini, Ollama, or GPT-4.",
   "scripts": {
     "build": "./scripts/build.sh",

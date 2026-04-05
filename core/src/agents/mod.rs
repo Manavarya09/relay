@@ -1,7 +1,11 @@
+pub mod aider;
+pub mod claude;
 pub mod codex;
+pub mod copilot;
 pub mod gemini;
 pub mod ollama;
 pub mod openai;
+pub mod opencode;
 
 use crate::{AgentStatus, Config, HandoffResult};
 use anyhow::Result;
@@ -18,10 +22,14 @@ pub fn get_agents(config: &Config) -> Vec<Box<dyn Agent>> {
     let mut agents: Vec<Box<dyn Agent>> = Vec::new();
     for name in &config.general.priority {
         match name.as_str() {
-            "codex"  => agents.push(Box::new(codex::CodexAgent::new(&config.agents.codex))),
-            "gemini" => agents.push(Box::new(gemini::GeminiAgent::new(&config.agents.gemini))),
-            "ollama" => agents.push(Box::new(ollama::OllamaAgent::new(&config.agents.ollama))),
-            "openai" => agents.push(Box::new(openai::OpenAIAgent::new(&config.agents.openai))),
+            "codex"    => agents.push(Box::new(codex::CodexAgent::new(&config.agents.codex))),
+            "gemini"   => agents.push(Box::new(gemini::GeminiAgent::new(&config.agents.gemini))),
+            "ollama"   => agents.push(Box::new(ollama::OllamaAgent::new(&config.agents.ollama))),
+            "openai"   => agents.push(Box::new(openai::OpenAIAgent::new(&config.agents.openai))),
+            "aider"    => agents.push(Box::new(aider::AiderAgent::new(None))),
+            "claude"   => agents.push(Box::new(claude::ClaudeAgent::new())),
+            "copilot"  => agents.push(Box::new(copilot::CopilotAgent::new())),
+            "opencode" => agents.push(Box::new(opencode::OpenCodeAgent::new())),
             _ => {} // unknown agent, skip
         }
     }

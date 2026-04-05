@@ -3,6 +3,7 @@
 use super::Agent;
 use crate::{AgentStatus, HandoffResult, OllamaConfig};
 use anyhow::Result;
+use std::process::Command;
 
 pub struct OllamaAgent {
     url: String,
@@ -22,43 +23,24 @@ impl Agent for OllamaAgent {
     fn name(&self) -> &str { "ollama" }
 
     fn check_available(&self) -> AgentStatus {
-        // Ping Ollama's API
+        // Use curl with a 2s timeout — avoids ureq hanging on refused connections
         let tag_url = format!("{}/api/tags", self.url);
-        match ureq::get(&tag_url).call() {
-            Ok(resp) => {
-                let body: serde_json::Value = resp.into_json().unwrap_or_default();
-                let models = body.get("models")
-                    .and_then(|m| m.as_array())
-                    .map(|a| a.len())
-                    .unwrap_or(0);
+        let output = Command::new("curl")
+            .args(["--silent", "--max-time", "2", &tag_url])
+            .output();
 
-                // Check if our target model is available
-                let has_model = body.get("models")
-                    .and_then(|m| m.as_array())
-                    .map(|arr| arr.iter().any(|m| {
-                        m.get("name").and_then(|n| n.as_str())
-                            .map(|n| n.starts_with(&self.model))
-                            .unwrap_or(false)
-                    }))
-                    .unwrap_or(false);
-
-                if has_model {
-                    AgentStatus {
-                        name: "ollama".into(),
-                        available: true,
-                        reason: format!("Running at {}, {} models, '{}' available", self.url, models, self.model),
-                        version: Some(self.model.clone()),
-                    }
-                } else {
-                    AgentStatus {
-                        name: "ollama".into(),
-                        available: true,
-                        reason: format!("Running but model '{}' not pulled. {} models available", self.model, models),
-                        version: None,
-                    }
+        match output {
+            Ok(o) if o.status.success() => {
+                let body: serde_json::Value = serde_json::from_slice(&o.stdout).unwrap_or_default();
+                let models = body.get("models").and_then(|m| m.as_array()).map(|a| a.len()).unwrap_or(0);
+                AgentStatus {
+                    name: "ollama".into(),
+                    available: true,
+                    reason: format!("Running at {}, {} models available", self.url, models),
+                    version: Some(self.model.clone()),
                 }
             }
-            Err(_) => AgentStatus {
+            _ => AgentStatus {
                 name: "ollama".into(),
                 available: false,
                 reason: format!("Not reachable at {}", self.url),
@@ -69,7 +51,6 @@ impl Agent for OllamaAgent {
 
     fn execute(&self, handoff_prompt: &str, _project_dir: &str) -> Result<HandoffResult> {
         let url = format!("{}/api/generate", self.url);
-
         let body = serde_json::json!({
             "model": self.model,
             "prompt": handoff_prompt,
@@ -81,11 +62,7 @@ impl Agent for OllamaAgent {
             .send_json(&body)?;
 
         let resp_json: serde_json::Value = resp.into_json()?;
-        let text = resp_json
-            .get("response")
-            .and_then(|r| r.as_str())
-            .unwrap_or("(no response)");
-
+        let text = resp_json.get("response").and_then(|r| r.as_str()).unwrap_or("(no response)");
         println!("{text}");
 
         Ok(HandoffResult {
