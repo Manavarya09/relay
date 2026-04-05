@@ -6,6 +6,8 @@
 [![npm](https://img.shields.io/npm/v/@masyv/relay)](https://www.npmjs.com/package/@masyv/relay)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+![Relay — Claude to Codex handoff](relay-hero.png)
+
 ## The Problem
 
 It's 6:20 PM. Your submission is at 7 PM. You're deep in a Claude Code session — 45 minutes of context, decisions, half-finished code. Then:
