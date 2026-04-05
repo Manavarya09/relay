@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relay Terminal Screenshot</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d0d0d;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .terminal-window {
+    width: 1200px;
+    background: #1e1e1e;
+    border-radius: 10px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 20px 60px rgba(0,0,0,0.7),
+      0 0 100px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+
+  .title-bar {
+    background: linear-gradient(180deg, #3c3c3c 0%, #2a2a2a 100%);
+    height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    position: relative;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .dot.red { background: #ff5f57; border: 1px solid #e0443e; }
+  .dot.yellow { background: #febc2e; border: 1px solid #dea123; }
+  .dot.green { background: #28c840; border: 1px solid #1aab29; }
+
+  .title-text {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #999;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .terminal-body {
+    padding: 16px 20px 24px;
+    font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #d4d4d4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .prompt {
+    color: #d4d4d4;
+  }
+  .prompt .venv { color: #a0a0a0; }
+  .prompt .user { color: #4ec94e; }
+  .prompt .dir { color: #5ca8f5; }
+  .prompt .sep { color: #888; }
+
+  .cmd { color: #e8e8e8; font-weight: 600; }
+
+  .cyan { color: #56d4dd; }
+  .green { color: #4ec94e; }
+  .red { color: #f44747; }
+  .yellow { color: #e5c07b; }
+  .dim { color: #6a6a6a; }
+  .white { color: #d4d4d4; }
+  .bright-white { color: #f0f0f0; }
+  .blue { color: #5ca8f5; }
+  .magenta { color: #c678dd; }
+  .bold { font-weight: 700; }
+
+  .section-gap {
+    display: block;
+    height: 20px;
+  }
+
+  .codex-box {
+    background: #1a2332;
+    border: 1px solid #2a3a4a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 4px 0;
+    color: #b8c9db;
+  }
+
+  .codex-box .codex-header {
+    color: #7ec8e3;
+    font-weight: 600;
+  }
+
+  .codex-box .codex-dim {
+    color: #506a80;
+  }
+
+  .codex-box .codex-body {
+    color: #c8d8e8;
+    margin-top: 8px;
+  }
+
+  .codex-box .codex-bullet {
+    color: #7ec8e3;
+  }
+</style>
+</head>
+<body>
+
+<div class="terminal-window">
+  <div class="title-bar">
+    <div class="traffic-lights">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <span class="title-text">manavaryasingh &mdash; relay &mdash; 80&times;40</span>
+  </div>
+  <div class="terminal-body"><span class="prompt"><span class="venv">(.venv)</span> <span class="user">manavaryasingh@MacBook-Pro-5</span> <span class="blue">~</span> <span class="sep">%</span></span> <span class="cmd">relay status</span>
+
+  <span class="cyan">════════════════════════════════════════════════════════════</span>
+  <span class="cyan">📋  Session Snapshot</span>
+  <span class="cyan">════════════════════════════════════════════════════════════</span>
+
+  📁  <span class="dim">~/myproject</span>
+  🕐  <span class="dim">2026-04-05 18:20:03</span>
+
+  <span class="cyan">🎯 Current Task</span>
+  <span class="cyan">──────────────────────────────────────────────────</span>
+  <span class="bright-white">Fix the WebSocket handler — borrow checker error on line 47</span>
+
+  <span class="cyan">📝 Progress</span>
+  <span class="cyan">──────────────────────────────────────────────────</span>
+  <span class="green">✅  Database schema + REST API</span>
+  <span class="green">✅  Landing page overhaul</span>
+  <span class="yellow">🔄  WebSocket handler (IN PROGRESS)</span>
+  <span class="dim">⏳  Frontend charts</span>
+  <span class="dim">⏳  Auth system</span>
+
+  <span class="red">🚨 Last Error</span>
+  <span class="cyan">──────────────────────────────────────────────────</span>
+  <span class="red">error[E0499]: cannot borrow `state` as mutable more than once</span>
+
+  <span class="cyan">💬 Conversation (25 turns)</span>
+  <span class="cyan">──────────────────────────────────────────────────</span>
+  <span class="magenta">🤖 AI</span>   <span class="white">The fix is to wrap state in Arc&lt;Mutex&lt;T&gt;&gt;</span>
+  <span class="blue">🔧 TOOL</span> <span class="dim">[Edit] src/server/websocket.rs (replacing 234 chars)</span>
+  <span class="dim">📤 OUT</span>  <span class="dim">File updated successfully.</span>
+  <span class="blue">🔧 TOOL</span> <span class="dim">[Bash] cargo check</span>
+  <span class="dim">📤 OUT</span>  <span class="red">error[E0499]: cannot borrow `state` as mutable...</span>
+
+  <span class="cyan">════════════════════════════════════════════════════════════</span>
+
+<span class="section-gap"></span><span class="prompt"><span class="venv">(.venv)</span> <span class="user">manavaryasingh@MacBook-Pro-5</span> <span class="blue">~</span> <span class="sep">%</span></span> <span class="cmd">relay handoff --to codex --deadline "7:00 PM"</span>
+
+  <span class="cyan">╔═══════════════════════════════════════════════╗</span>
+  <span class="cyan">║</span>                                               <span class="cyan">║</span>
+  <span class="cyan">║</span>   <span class="yellow bold">⚡ R E L A Y</span>                                <span class="cyan">║</span>
+  <span class="cyan">║</span>   <span class="dim">Cross-agent context handoff</span>                 <span class="cyan">║</span>
+  <span class="cyan">║</span>                                               <span class="cyan">║</span>
+  <span class="cyan">╚═══════════════════════════════════════════════╝</span>
+
+  <span class="green">✓</span> <span class="dim">[1/3]</span> <span class="white">Session captured</span>
+  <span class="green">✓</span> <span class="dim">[2/3]</span> <span class="white">Handoff built</span>
+  <span class="green">✓</span> <span class="dim">[3/3]</span> <span class="white">Codex launched</span>
+
+  <span class="green bold">✅ Handed off to codex</span>
+  <span class="dim">📄 .relay/handoff_20260405_182003.md</span>
+
+<span class="section-gap"></span><div class="codex-box"><span class="codex-header">╭────────────────────────────────────────────╮</span>
+<span class="codex-header">│</span> <span class="codex-header">&gt;_ OpenAI Codex</span> <span class="codex-dim">(research preview)</span>         <span class="codex-header">│</span>
+<span class="codex-header">│</span>                                            <span class="codex-header">│</span>
+<span class="codex-header">│</span> <span class="codex-dim">model:</span> <span class="codex-body">gpt-5.4</span>        <span class="codex-dim">/model to change</span>     <span class="codex-header">│</span>
+<span class="codex-header">│</span> <span class="codex-dim">dir:</span>   <span class="codex-body">~/myproject</span>                         <span class="codex-header">│</span>
+<span class="codex-header">╰────────────────────────────────────────────╯</span>
+
+<span class="codex-bullet">•</span> <span class="codex-body">Context restored from your Claude session. I can see you were
+  fixing a borrow checker error in the WebSocket handler
+  (src/server/websocket.rs line 47). What would you like me to do?</span></div>
+</div>
+</div>
+
+</body>
+</html>
