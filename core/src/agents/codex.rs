@@ -69,33 +69,27 @@ impl Agent for CodexAgent {
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 
-        // Use `codex exec --full-auto` for non-interactive auto-approval
-        let output = Command::new(&binary)
+        // Launch Codex INTERACTIVELY with the handoff as the initial prompt.
+        // This opens the Codex TUI so the user can keep working with it.
+        // stdin/stdout/stderr are inherited so the user sees the Codex UI.
+        let status = Command::new(&binary)
             .current_dir(project_dir)
-            .arg("exec")
             .arg("--full-auto")
             .arg("-m")
             .arg(&self.model)
             .arg(handoff_prompt)
-            .output()?;
-
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-
-        if !stdout.is_empty() {
-            println!("{stdout}");
-        }
-        if !stderr.is_empty() {
-            eprintln!("{stderr}");
-        }
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit())
+            .status()?;
 
         Ok(HandoffResult {
             agent: "codex".into(),
-            success: output.status.success(),
-            message: if output.status.success() {
-                format!("Codex ({}) completed handoff task", self.model)
+            success: status.success(),
+            message: if status.success() {
+                format!("Codex ({}) session ended", self.model)
             } else {
-                format!("Codex exited with code {:?}", output.status.code())
+                format!("Codex exited with code {:?}", status.code())
             },
             handoff_file: Some(tmp.to_string_lossy().to_string()),
         })
