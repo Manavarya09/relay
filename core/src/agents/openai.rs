@@ -59,10 +59,34 @@ impl Agent for OpenAIAgent {
             "max_tokens": 4096
         });
 
-        let resp = ureq::post("https://api.openai.com/v1/chat/completions")
+        let resp = match ureq::post("https://api.openai.com/v1/chat/completions")
             .set("Authorization", &format!("Bearer {api_key}"))
             .set("Content-Type", "application/json")
-            .send_json(&body)?;
+            .send_json(&body)
+        {
+            Ok(resp) => resp,
+            Err(ureq::Error::Status(code, resp)) => {
+                let error_body = resp.into_string().unwrap_or_default();
+                let api_msg = serde_json::from_str::<serde_json::Value>(&error_body)
+                    .ok()
+                    .and_then(|v| v.get("error").and_then(|e| e.get("message")).and_then(|m| m.as_str()).map(String::from))
+                    .unwrap_or(error_body);
+                return Ok(HandoffResult {
+                    agent: "openai".into(),
+                    success: false,
+                    message: format!("OpenAI API error (HTTP {}): {}", code, api_msg),
+                    handoff_file: None,
+                });
+            }
+            Err(ureq::Error::Transport(t)) => {
+                return Ok(HandoffResult {
+                    agent: "openai".into(),
+                    success: false,
+                    message: format!("OpenAI API unreachable: {}", t),
+                    handoff_file: None,
+                });
+            }
+        };
 
         let resp_json: serde_json::Value = resp.into_json()?;
         let text = resp_json
