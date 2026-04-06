@@ -264,18 +264,16 @@ pub fn print_agents(
     for s in statuses {
         if s.available {
             eprintln!(
-                "  {}  {:<12} {}",
-                "✅",
+                "  \u{2705}  {:<12} {}",
                 s.name.green().bold(),
                 s.reason.dimmed()
             );
             if let Some(ref v) = s.version {
-                eprintln!("  {}  {:<12} {}", " ", "", format!("v{v}").dimmed());
+                eprintln!("     {:<12} {}", "", format!("v{v}").dimmed());
             }
         } else {
             eprintln!(
-                "  {}  {:<12} {}",
-                "❌",
+                "  \u{274c}  {:<12} {}",
                 s.name.dimmed(),
                 s.reason.dimmed()
             );
@@ -286,14 +284,12 @@ pub fn print_agents(
     eprintln!();
     if available == 0 {
         eprintln!(
-            "  {} {}",
-            "⚠️ ",
+            "  \u{26a0}\u{fe0f}  {}",
             "No agents available. Run 'relay init' to configure.".yellow()
         );
     } else {
         eprintln!(
-            "  {} {} agent{} ready for handoff",
-            "🚀",
+            "  \u{1f680} {} agent{} ready for handoff",
             available.to_string().green().bold(),
             if available == 1 { "" } else { "s" }
         );
@@ -306,19 +302,18 @@ pub fn print_agents(
 pub fn print_handoff_success(agent: &str, file: &str) {
     eprintln!();
     eprintln!(
-        "  {} {}",
-        "✅",
+        "  \u{2705} {}",
         format!("Handed off to {agent}").green().bold()
     );
-    eprintln!("  📄 {}", file.dimmed());
+    eprintln!("  \u{1f4c4} {}", file.dimmed());
     eprintln!();
 }
 
 pub fn print_handoff_fail(message: &str, file: &str) {
     eprintln!();
-    eprintln!("  {} {}", "❌", message.red());
+    eprintln!("  \u{274c} {}", message.red());
     eprintln!();
-    eprintln!("  💡 Context saved — copy-paste into any AI:");
+    eprintln!("  \u{1f4a1} Context saved \u{2014} copy-paste into any AI:");
     eprintln!("     {}", file.cyan());
     eprintln!();
 }
