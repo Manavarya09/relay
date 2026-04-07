@@ -1,7 +1,7 @@
 //! Codex CLI agent adapter.
 //! Launches `codex` (OpenAI Codex CLI) as a subprocess with the handoff prompt.
 
-use super::Agent;
+use super::{Agent, find_binary};
 use crate::{AgentStatus, CodexConfig, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
@@ -18,25 +18,13 @@ impl CodexAgent {
             model: config.model.clone(),
         }
     }
-
-    fn find_binary(&self) -> Option<String> {
-        // Check if binary exists in PATH
-        let output = Command::new("which")
-            .arg(&self.binary)
-            .output()
-            .ok()?;
-        if output.status.success() {
-            return Some(String::from_utf8_lossy(&output.stdout).trim().to_string());
-        }
-        None
-    }
 }
 
 impl Agent for CodexAgent {
     fn name(&self) -> &str { "codex" }
 
     fn check_available(&self) -> AgentStatus {
-        match self.find_binary() {
+        match find_binary(&self.binary) {
             Some(path) => {
                 // Try to get version
                 let version = Command::new(&path)
@@ -63,7 +51,7 @@ impl Agent for CodexAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = self.find_binary().unwrap_or(self.binary.clone());
+        let binary = find_binary(&self.binary).unwrap_or(self.binary.clone());
 
         // Write handoff to a temp file for reference
         let tmp = std::env::temp_dir().join("relay_handoff.md");

@@ -205,10 +205,55 @@ fn main() -> Result<()> {
                     eprintln!("  📋 Handoff copied to clipboard!");
                     eprintln!("  📄 Also saved: {}", handoff_path.display());
                 }
-                #[cfg(not(target_os = "macos"))]
+                #[cfg(target_os = "windows")]
                 {
-                    eprintln!("  Clipboard not supported on this platform.");
-                    eprintln!("  📄 Saved to: {}", handoff_path.display());
+                    use std::process::{Command, Stdio};
+                    let mut child = Command::new("clip")
+                        .stdin(Stdio::piped())
+                        .spawn()?;
+                    if let Some(mut stdin) = child.stdin.take() {
+                        use std::io::Write;
+                        stdin.write_all(handoff_text.as_bytes())?;
+                    }
+                    child.wait()?;
+                    eprintln!("  📋 Handoff copied to clipboard!");
+                    eprintln!("  📄 Also saved: {}", handoff_path.display());
+                }
+                #[cfg(all(unix, not(target_os = "macos")))]
+                {
+                    use std::process::{Command, Stdio};
+                    // Try xclip first (X11), then wl-copy (Wayland)
+                    let clipboard_result = if let Ok(mut child) = Command::new("xclip")
+                        .arg("-selection")
+                        .arg("clipboard")
+                        .stdin(Stdio::piped())
+                        .spawn()
+                    {
+                        if let Some(mut stdin) = child.stdin.take() {
+                            use std::io::Write;
+                            let _ = stdin.write_all(handoff_text.as_bytes());
+                        }
+                        child.wait().ok()
+                    } else if let Ok(mut child) = Command::new("wl-copy")
+                        .stdin(Stdio::piped())
+                        .spawn()
+                    {
+                        if let Some(mut stdin) = child.stdin.take() {
+                            use std::io::Write;
+                            let _ = stdin.write_all(handoff_text.as_bytes());
+                        }
+                        child.wait().ok()
+                    } else {
+                        None
+                    };
+
+                    if clipboard_result.is_some() {
+                        eprintln!("  📋 Handoff copied to clipboard!");
+                        eprintln!("  📄 Also saved: {}", handoff_path.display());
+                    } else {
+                        eprintln!("  Clipboard tools not available (xclip or wl-copy required)");
+                        eprintln!("  📄 Saved to: {}", handoff_path.display());
+                    }
                 }
                 return Ok(());
             }

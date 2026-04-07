@@ -46,14 +46,18 @@ pub fn read_latest_session(project_dir: &Path) -> SessionInfo {
 }
 
 pub fn find_claude_project_dir(project_dir: &Path) -> Option<std::path::PathBuf> {
-    let home = std::env::var("HOME").ok()?;
-    let claude_projects = std::path::PathBuf::from(&home).join(".claude/projects");
+    let home_dir = std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))?;
+    let claude_projects = std::path::PathBuf::from(home_dir).join(".claude/projects");
     if !claude_projects.exists() {
         return None;
     }
 
-    // Claude encodes: /Users/user/myproject -> -Users-user-myproject
-    let proj_str = project_dir.to_string_lossy().replace('/', "-");
+    // Claude encodes paths with / and \ as dashes: /Users/user/myproject -> -Users-user-myproject
+    let proj_str = project_dir
+        .to_string_lossy()
+        .replace('/', "-")
+        .replace('\\', "-");
     let candidate = claude_projects.join(&proj_str);
     if candidate.exists() {
         return Some(candidate);

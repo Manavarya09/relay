@@ -20,6 +20,10 @@ fn history_finds_handoff_files() {
         relay_dir.join("handoff_20260405_180000.md"),
         "## CURRENT TASK\n\nFix the bug\n\n  Target agent   : codex\n",
     ).unwrap();
+
+    // Add small delay to ensure different modification times
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
     std::fs::write(
         relay_dir.join("handoff_20260405_190000.md"),
         "## CURRENT TASK\n\nDeploy the app\n\n  Target agent   : gemini\n",
@@ -27,7 +31,7 @@ fn history_finds_handoff_files() {
 
     let entries = relay::history::list_handoffs(&dir, 10).unwrap();
     assert_eq!(entries.len(), 2);
-    // Newest first
+    // Newest first (sorted by file modification time)
     assert!(entries[0].timestamp.contains("19:00"));
 
     std::fs::remove_dir_all(&dir).ok();

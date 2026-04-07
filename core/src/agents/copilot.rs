@@ -1,6 +1,6 @@
 //! GitHub Copilot CLI agent adapter.
 
-use super::Agent;
+use super::{Agent, find_binary};
 use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
@@ -10,22 +10,13 @@ pub struct CopilotAgent;
 
 impl CopilotAgent {
     pub fn new() -> Self { Self }
-
-    fn find_binary() -> Option<String> {
-        let output = Command::new("which").arg("copilot").output().ok()?;
-        if output.status.success() {
-            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
-        } else {
-            None
-        }
-    }
 }
 
 impl Agent for CopilotAgent {
     fn name(&self) -> &str { "copilot" }
 
     fn check_available(&self) -> AgentStatus {
-        match Self::find_binary() {
+        match find_binary("copilot") {
             Some(path) => AgentStatus {
                 name: "copilot".into(),
                 available: true,
@@ -42,7 +33,7 @@ impl Agent for CopilotAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = Self::find_binary().unwrap_or("copilot".into());
+        let binary = find_binary("copilot").unwrap_or("copilot".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 

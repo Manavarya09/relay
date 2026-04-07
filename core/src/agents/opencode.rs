@@ -1,7 +1,7 @@
 //! OpenCode agent adapter — Go-based coding agent.
 //! https://github.com/opencode-ai/opencode
 
-use super::Agent;
+use super::{Agent, find_binary};
 use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
@@ -11,22 +11,13 @@ pub struct OpenCodeAgent;
 
 impl OpenCodeAgent {
     pub fn new() -> Self { Self }
-
-    fn find_binary() -> Option<String> {
-        let output = Command::new("which").arg("opencode").output().ok()?;
-        if output.status.success() {
-            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
-        } else {
-            None
-        }
-    }
 }
 
 impl Agent for OpenCodeAgent {
     fn name(&self) -> &str { "opencode" }
 
     fn check_available(&self) -> AgentStatus {
-        match Self::find_binary() {
+        match find_binary("opencode") {
             Some(path) => AgentStatus {
                 name: "opencode".into(),
                 available: true,
@@ -45,7 +36,7 @@ impl Agent for OpenCodeAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = Self::find_binary().unwrap_or("opencode".into());
+        let binary = find_binary("opencode").unwrap_or("opencode".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 

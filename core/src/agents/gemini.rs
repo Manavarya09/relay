@@ -1,6 +1,6 @@
 //! Gemini agent adapter — uses the Gemini API.
 
-use super::Agent;
+use super::{Agent, find_binary};
 use crate::{AgentStatus, GeminiConfig, HandoffResult};
 use anyhow::Result;
 
@@ -26,15 +26,13 @@ impl Agent for GeminiAgent {
 
     fn check_available(&self) -> AgentStatus {
         // First check if gemini CLI is available
-        if let Ok(output) = std::process::Command::new("which").arg("gemini").output() {
-            if output.status.success() {
-                return AgentStatus {
-                    name: "gemini".into(),
-                    available: true,
-                    reason: "Gemini CLI found in PATH".into(),
-                    version: None,
-                };
-            }
+        if find_binary("gemini").is_some() {
+            return AgentStatus {
+                name: "gemini".into(),
+                available: true,
+                reason: "Gemini CLI found in PATH".into(),
+                version: None,
+            };
         }
 
         match &self.api_key {
@@ -55,20 +53,18 @@ impl Agent for GeminiAgent {
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
         // Try Gemini CLI first
-        if let Ok(output) = std::process::Command::new("which").arg("gemini").output() {
-            if output.status.success() {
-                let mut child = std::process::Command::new("gemini")
-                    .current_dir(project_dir)
-                    .arg(handoff_prompt)
-                    .spawn()?;
-                let _ = child.wait();
-                return Ok(HandoffResult {
-                    agent: "gemini".into(),
-                    success: true,
-                    message: "Gemini CLI launched with handoff context".into(),
-                    handoff_file: None,
-                });
-            }
+        if find_binary("gemini").is_some() {
+            let mut child = std::process::Command::new("gemini")
+                .current_dir(project_dir)
+                .arg(handoff_prompt)
+                .spawn()?;
+            let _ = child.wait();
+            return Ok(HandoffResult {
+                agent: "gemini".into(),
+                success: true,
+                message: "Gemini CLI launched with handoff context".into(),
+                handoff_file: None,
+            });
         }
 
         // Fall back to API

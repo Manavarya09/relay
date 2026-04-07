@@ -1,7 +1,7 @@
 //! Aider agent adapter — launches the aider TUI interactively.
 //! https://github.com/paul-gauthier/aider
 
-use super::Agent;
+use super::{Agent, find_binary};
 use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
@@ -16,22 +16,13 @@ impl AiderAgent {
             model: model.unwrap_or("sonnet").to_string(),
         }
     }
-
-    fn find_binary() -> Option<String> {
-        let output = Command::new("which").arg("aider").output().ok()?;
-        if output.status.success() {
-            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
-        } else {
-            None
-        }
-    }
 }
 
 impl Agent for AiderAgent {
     fn name(&self) -> &str { "aider" }
 
     fn check_available(&self) -> AgentStatus {
-        match Self::find_binary() {
+        match find_binary("aider") {
             Some(path) => AgentStatus {
                 name: "aider".into(),
                 available: true,
@@ -50,7 +41,7 @@ impl Agent for AiderAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = Self::find_binary().unwrap_or("aider".into());
+        let binary = find_binary("aider").unwrap_or("aider".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 

@@ -9,6 +9,20 @@ pub mod opencode;
 
 use crate::{AgentStatus, Config, HandoffResult};
 use anyhow::Result;
+use std::process::Command;
+
+/// Cross-platform binary finder: uses `where` on Windows, `which` on Unix.
+pub fn find_binary(name: &str) -> Option<String> {
+    let cmd = if cfg!(target_os = "windows") { "where" } else { "which" };
+    let output = Command::new(cmd).arg(name).output().ok()?;
+    if output.status.success() {
+        // `where` can return multiple lines; take the first
+        let out = String::from_utf8_lossy(&output.stdout);
+        Some(out.lines().next()?.trim().to_string())
+    } else {
+        None
+    }
+}
 
 /// Trait for all fallback agents.
 pub trait Agent {

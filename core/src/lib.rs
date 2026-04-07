@@ -135,14 +135,19 @@ impl Config {
     }
 }
 
+fn home_dir() -> PathBuf {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir())
+}
+
 pub fn config_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-    PathBuf::from(home).join(".relay/config.toml")
+    home_dir().join(".relay/config.toml")
 }
 
 pub fn data_dir() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-    PathBuf::from(home).join(".relay")
+    home_dir().join(".relay")
 }
 
 // ─── Core Types ──────────────────────────────────────────────────────────────
