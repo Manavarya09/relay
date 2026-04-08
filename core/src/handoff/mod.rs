@@ -142,21 +142,129 @@ pub fn build_handoff(
     );
     sections.push(instructions);
 
-    let mut full = sections.join("\n\n");
+    let full = sections.join("\n\n");
 
-    // Hard cap at max_tokens (rough estimate: chars / 3.5)
+    // Smart compression: prioritize recent context over old
     let max_chars = (max_tokens as f64 * 3.5) as usize;
-    if full.len() > max_chars {
-        // Find a valid UTF-8 char boundary
-        let mut end = max_chars;
-        while end > 0 && !full.is_char_boundary(end) {
-            end -= 1;
-        }
-        full.truncate(end);
-        full.push_str("\n\n[...truncated to fit context limit]");
+    if full.len() <= max_chars {
+        return Ok(full);
     }
 
-    Ok(full)
+    // Priority-based compression: rebuild with budget awareness
+    // Priority 1 (always keep): header, current task, last error, instructions
+    // Priority 2 (high): recent conversation (last 5 turns), decisions, git state
+    // Priority 3 (medium): older conversation, todos, recent files
+    let mut budget = max_chars;
+    let mut compressed = Vec::new();
+    let mut dropped_sections = Vec::new();
+
+    // Priority 1: header + task + error + instructions (always included)
+    let p1_indices: Vec<usize> = vec![0, 1]; // header, task always first two
+    let error_idx = sections.iter().position(|s| s.starts_with("## LAST ERROR"));
+    let instr_idx = sections.iter().position(|s| s.starts_with("## INSTRUCTIONS"));
+
+    for &idx in &p1_indices {
+        if idx < sections.len() && sections[idx].len() < budget {
+            budget -= sections[idx].len() + 2;
+            compressed.push(sections[idx].clone());
+        }
+    }
+    if let Some(idx) = error_idx {
+        if sections[idx].len() < budget {
+            budget -= sections[idx].len() + 2;
+            compressed.push(sections[idx].clone());
+        }
+    }
+
+    // Priority 2: git state, decisions
+    let git_idx = sections.iter().position(|s| s.starts_with("## GIT STATE"));
+    let dec_idx = sections.iter().position(|s| s.starts_with("## KEY DECISIONS"));
+
+    for opt_idx in [git_idx, dec_idx] {
+        if let Some(idx) = opt_idx {
+            if sections[idx].len() < budget {
+                budget -= sections[idx].len() + 2;
+                compressed.push(sections[idx].clone());
+            } else {
+                dropped_sections.push("decisions/git (truncated)");
+            }
+        }
+    }
+
+    // Priority 3: conversation context — trim from beginning to fit
+    let convo_idx = sections.iter().position(|s| s.starts_with("## CONVERSATION CONTEXT"));
+    if let Some(idx) = convo_idx {
+        let convo = &sections[idx];
+        if convo.len() < budget {
+            budget -= convo.len() + 2;
+            compressed.push(convo.clone());
+        } else if budget > 500 {
+            // Fit what we can: take the end of conversation (most recent turns)
+            let header = "## CONVERSATION CONTEXT\n\n[Earlier turns omitted to fit context budget]\n\n";
+            let available = budget.saturating_sub(header.len() + 50);
+            let start = convo.len().saturating_sub(available);
+            // Find a safe char boundary
+            let mut safe_start = start;
+            while safe_start < convo.len() && !convo.is_char_boundary(safe_start) {
+                safe_start += 1;
+            }
+            // Find the next line boundary for clean cut
+            if let Some(nl) = convo[safe_start..].find('\n') {
+                safe_start += nl + 1;
+            }
+            let trimmed = format!("{}{}", header, &convo[safe_start..]);
+            budget -= trimmed.len() + 2;
+            compressed.push(trimmed);
+            dropped_sections.push("older conversation turns");
+        } else {
+            dropped_sections.push("conversation context");
+        }
+    }
+
+    // Priority 4: todos, recent files
+    let todo_idx = sections.iter().position(|s| s.starts_with("## PROGRESS"));
+    let files_idx = sections.iter().position(|s| s.starts_with("## RECENTLY CHANGED"));
+
+    for (opt_idx, name) in [(todo_idx, "todos"), (files_idx, "recent files")] {
+        if let Some(idx) = opt_idx {
+            if sections[idx].len() < budget {
+                budget -= sections[idx].len() + 2;
+                compressed.push(sections[idx].clone());
+            } else {
+                dropped_sections.push(name);
+            }
+        }
+    }
+
+    // Always add instructions at the end
+    if let Some(idx) = instr_idx {
+        compressed.push(sections[idx].clone());
+    }
+
+    let _ = budget; // suppress unused warning
+
+    // Add compression note if sections were dropped
+    if !dropped_sections.is_empty() {
+        compressed.push(format!(
+            "[Context compressed to fit {} token budget. Omitted: {}]",
+            max_tokens,
+            dropped_sections.join(", ")
+        ));
+    }
+
+    let mut result = compressed.join("\n\n");
+
+    // Final safety: hard truncate if still over budget
+    if result.len() > max_chars {
+        let mut end = max_chars;
+        while end > 0 && !result.is_char_boundary(end) {
+            end -= 1;
+        }
+        result.truncate(end);
+        result.push_str("\n\n[...truncated to fit context limit]");
+    }
+
+    Ok(result)
 }
 
 /// Save handoff to a file for reference/debugging.
