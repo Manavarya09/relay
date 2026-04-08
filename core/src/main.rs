@@ -46,6 +46,10 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
 
+        /// Skip secret detection warning
+        #[arg(long)]
+        force: bool,
+
         /// How many conversation turns to include (default: 25)
         #[arg(long, default_value = "25")]
         turns: usize,
@@ -158,7 +162,7 @@ fn main() -> Result<()> {
         // ═══════════════════════════════════════════════════════════════
         // HANDOFF
         // ═══════════════════════════════════════════════════════════════
-        Commands::Handoff { to, deadline, dry_run, turns, include, clipboard, template } => {
+        Commands::Handoff { to, deadline, dry_run, force, turns, include, clipboard, template } => {
             if !cli.json {
                 tui::print_banner();
             }
@@ -229,6 +233,28 @@ fn main() -> Result<()> {
 
             let build_ms = step2_start.elapsed().as_millis();
             if let Some(sp) = sp { sp.finish_with_message(format!("Handoff built ({build_ms}ms)")); }
+
+            // Secret detection
+            if !force {
+                let secrets = relay::secrets::scan_for_secrets(&handoff_text);
+                if !secrets.is_empty() && !cli.json {
+                    eprintln!();
+                    eprintln!("  \u{26a0}\u{fe0f}  {} potential secret(s) detected in handoff:", secrets.len());
+                    for s in secrets.iter().take(5) {
+                        eprintln!("    - {} (line {}): {}", s.pattern_name, s.line_number, s.redacted_match);
+                    }
+                    if secrets.len() > 5 {
+                        eprintln!("    ... and {} more", secrets.len() - 5);
+                    }
+                    eprintln!();
+                    eprintln!("  Use --force to skip this warning, or review the handoff file:");
+                    eprintln!("    {}", handoff_path.display());
+                    eprintln!();
+                    if !dry_run && !clipboard {
+                        return Ok(());
+                    }
+                }
+            }
 
             // JSON / dry-run output
             if cli.json {

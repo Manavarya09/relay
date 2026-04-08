@@ -7,6 +7,7 @@ pub mod handoff;
 pub mod history;
 pub mod resume;
 pub mod retry;
+pub mod secrets;
 pub mod tui;
 pub mod validate;
 
