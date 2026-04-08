@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use std::path::PathBuf;
 
 use relay::{agents, capture, handoff, tui, Config};
@@ -81,6 +82,9 @@ enum Commands {
 
     /// Generate default config at ~/.relay/config.toml
     Init,
+
+    /// Validate config and test agent connectivity
+    Validate,
 
     /// PostToolUse hook (auto-detect rate limits)
     Hook {
@@ -437,6 +441,43 @@ fn main() -> Result<()> {
                 eprintln!("    [agents.openai]");
                 eprintln!("    api_key = \"your-key\"");
             }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // VALIDATE
+        // ═══════════════════════════════════════════════════════════════
+        Commands::Validate => {
+            if !cli.json {
+                eprintln!();
+                eprintln!("  {}  {}", "🔍", "Validating Relay Configuration".bold());
+                eprintln!("  {}", "─".repeat(50).dimmed());
+                eprintln!();
+            }
+
+            let results = relay::validate::validate_config(&config);
+
+            if cli.json {
+                println!("{}", serde_json::to_string_pretty(&results)?);
+                return Ok(());
+            }
+
+            let mut all_ok = true;
+            for r in &results {
+                let (icon, status_str) = match r.status.as_str() {
+                    "ok" => ("✅", r.message.green().to_string()),
+                    "warn" => { all_ok = false; ("⚠️ ", r.message.yellow().to_string()) },
+                    _ => { all_ok = false; ("❌", r.message.red().to_string()) },
+                };
+                eprintln!("  {} {:<12} {}", icon, r.agent.bold(), status_str);
+            }
+
+            eprintln!();
+            if all_ok {
+                eprintln!("  {} All agents validated successfully!", "🚀".to_string());
+            } else {
+                eprintln!("  {} Some agents need attention. Run 'relay init' to configure.", "💡".to_string());
+            }
+            eprintln!();
         }
 
         // ═══════════════════════════════════════════════════════════════

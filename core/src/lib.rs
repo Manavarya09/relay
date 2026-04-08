@@ -6,6 +6,7 @@ pub mod handoff;
 pub mod history;
 pub mod resume;
 pub mod tui;
+pub mod validate;
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
