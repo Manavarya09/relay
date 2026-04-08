@@ -5,6 +5,7 @@ pub mod diff;
 pub mod handoff;
 pub mod history;
 pub mod resume;
+pub mod retry;
 pub mod tui;
 
 use serde::{Deserialize, Serialize};

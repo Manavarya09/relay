@@ -57,10 +57,15 @@ impl Agent for OllamaAgent {
             "stream": false
         });
 
-        let resp = match ureq::post(&url)
-            .set("Content-Type", "application/json")
-            .send_json(&body)
-        {
+        let retry_config = crate::retry::RetryConfig::default();
+        let url_clone = url.clone();
+        let body_clone = body.clone();
+
+        let resp = match crate::retry::with_retry(&retry_config, || {
+            ureq::post(&url_clone)
+                .set("Content-Type", "application/json")
+                .send_json(&body_clone)
+        }) {
             Ok(resp) => resp,
             Err(ureq::Error::Status(code, resp)) => {
                 let error_body = resp.into_string().unwrap_or_default();
