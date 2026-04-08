@@ -107,6 +107,12 @@ enum Commands {
         dry_run: bool,
     },
 
+    /// Generate shell completions
+    Completions {
+        /// Shell to generate completions for (bash, zsh, fish, powershell)
+        shell: String,
+    },
+
     /// PostToolUse hook (auto-detect rate limits)
     Hook {
         #[arg(long, default_value = "unknown")]
@@ -568,6 +574,28 @@ fn main() -> Result<()> {
             if !result.kept.is_empty() {
                 eprintln!("  Kept {} file(s)", result.kept.len());
             }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // COMPLETIONS
+        // ═══════════════════════════════════════════════════════════════
+        Commands::Completions { shell } => {
+            use clap::CommandFactory;
+            use clap_complete::{generate, Shell};
+
+            let shell = match shell.to_lowercase().as_str() {
+                "bash" => Shell::Bash,
+                "zsh" => Shell::Zsh,
+                "fish" => Shell::Fish,
+                "powershell" | "pwsh" => Shell::PowerShell,
+                _ => {
+                    eprintln!("  Unknown shell: {shell}. Supported: bash, zsh, fish, powershell");
+                    return Ok(());
+                }
+            };
+
+            let mut cmd = Cli::command();
+            generate(shell, &mut cmd, "relay", &mut std::io::stdout());
         }
 
         // ═══════════════════════════════════════════════════════════════
