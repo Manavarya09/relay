@@ -74,6 +74,10 @@ enum Commands {
         /// Number of entries to show
         #[arg(long, default_value = "10")]
         limit: usize,
+
+        /// Output format: table (default), json, csv
+        #[arg(long, default_value = "table")]
+        format: String,
     },
 
     /// Show what changed since the last handoff
@@ -359,14 +363,25 @@ fn main() -> Result<()> {
         // ═══════════════════════════════════════════════════════════════
         // HISTORY
         // ═══════════════════════════════════════════════════════════════
-        Commands::History { limit } => {
+        Commands::History { limit, format: fmt } => {
             let entries = relay::history::list_handoffs(&project_dir, limit)?;
 
-            if cli.json {
+            if cli.json || fmt == "json" {
                 println!("{}", serde_json::to_string_pretty(&entries)?);
                 return Ok(());
             }
 
+            if fmt == "csv" {
+                println!("timestamp,agent,task,filename");
+                for e in &entries {
+                    // Escape commas in task field
+                    let task = e.task.replace('"', "\"\"");
+                    println!("{},{}.\"{}\",{}", e.timestamp, e.agent, task, e.filename);
+                }
+                return Ok(());
+            }
+
+            // Default: table format
             if entries.is_empty() {
                 eprintln!("  No handoffs recorded yet.");
                 return Ok(());
