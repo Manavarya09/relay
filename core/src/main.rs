@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::time::Instant;
 
 use relay::{agents, capture, handoff, tui, Config};
 
@@ -118,8 +119,11 @@ fn main() -> Result<()> {
                 tui::print_banner();
             }
 
+            let handoff_start = Instant::now();
+
             // Step 1: Capture
             let sp = if !cli.json { Some(tui::step(1, 3, "Capturing session state...")) } else { None };
+            let step1_start = Instant::now();
 
             relay::capture::session::MAX_CONVERSATION_TURNS
                 .store(turns, std::sync::atomic::Ordering::Relaxed);
@@ -134,9 +138,11 @@ fn main() -> Result<()> {
                 if !includes.contains(&"todos") { snapshot.todos.clear(); }
             }
 
-            if let Some(sp) = sp { sp.finish_with_message("Session captured"); }
+            let capture_ms = step1_start.elapsed().as_millis();
+            if let Some(sp) = sp { sp.finish_with_message(format!("Session captured ({capture_ms}ms)")); }
 
             // Step 2: Build handoff
+            let step2_start = Instant::now();
             let sp = if !cli.json { Some(tui::step(2, 3, "Building handoff package...")) } else { None };
 
             // Resolve target agent
@@ -177,7 +183,8 @@ fn main() -> Result<()> {
             };
             let handoff_path = handoff::save_handoff(&handoff_text, &project_dir)?;
 
-            if let Some(sp) = sp { sp.finish_with_message("Handoff built"); }
+            let build_ms = step2_start.elapsed().as_millis();
+            if let Some(sp) = sp { sp.finish_with_message(format!("Handoff built ({build_ms}ms)")); }
 
             // JSON / dry-run output
             if cli.json {
@@ -186,6 +193,10 @@ fn main() -> Result<()> {
                     "handoff_text": handoff_text,
                     "handoff_file": handoff_path.to_string_lossy(),
                     "target_agent": target_name,
+                    "timing": {
+                        "capture_ms": capture_ms,
+                        "build_ms": build_ms,
+                    }
                 }))?);
                 return Ok(());
             }
@@ -265,6 +276,7 @@ fn main() -> Result<()> {
             }
 
             // Step 3: Launch agent
+            let step3_start = Instant::now();
             let sp = tui::step(3, 3, &format!("Launching {}...", target_name));
 
             let result = if to.is_some() {
@@ -273,14 +285,20 @@ fn main() -> Result<()> {
                 agents::handoff_to_first_available(&config, &handoff_text, &project_dir.to_string_lossy())
             }?;
 
+            let launch_ms = step3_start.elapsed().as_millis();
+            let total_ms = handoff_start.elapsed().as_millis();
+
             sp.finish_with_message(if result.success {
-                format!("{} launched", target_name)
+                format!("{} launched ({launch_ms}ms)", target_name)
             } else {
                 "Failed".into()
             });
 
             if result.success {
                 tui::print_handoff_success(&result.agent, &handoff_path.to_string_lossy());
+                eprintln!("  \u{23f1}\u{fe0f}  Total: {}ms (capture: {}ms, build: {}ms, launch: {}ms)",
+                    total_ms, capture_ms, build_ms, launch_ms);
+                eprintln!();
             } else {
                 tui::print_handoff_fail(&result.message, &handoff_path.to_string_lossy());
             }
