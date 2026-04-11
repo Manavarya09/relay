@@ -1,12 +1,8 @@
 #!/usr/bin/env node
 
-// Downloads the pre-built relay binary for the current platform.
-// Falls back to instructions for building from source if no binary available.
-
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const https = require("https");
 
 const VERSION = "1.2.0";
 const REPO = "Manavarya09/relay";
@@ -22,71 +18,47 @@ const platform = `${process.platform}-${process.arch}`;
 const asset = PLATFORM_MAP[platform];
 
 if (!asset) {
-  console.log(`\n  relay: No pre-built binary for ${platform}.`);
-  console.log(`  Build from source: cd core && cargo build --release\n`);
+  console.log(`  relay: No pre-built binary for ${platform}. Build from source.`);
   process.exit(0);
 }
 
 const binDir = path.join(__dirname, "..", "bin");
-const binPath = path.join(binDir, platform === "win32-x64" ? "relay.exe" : "relay");
-const wrapperPath = path.join(binDir, "relay");
+const ext = process.platform === "win32" ? ".exe" : "";
+const binPath = path.join(binDir, `relay${ext}`);
 
-// Skip if binary already exists
+// Skip if real binary already exists (not the node wrapper)
 if (fs.existsSync(binPath)) {
-  process.exit(0);
+  const content = fs.readFileSync(binPath, "utf8").slice(0, 50);
+  if (!content.includes("node") && !content.includes("#!/usr/bin/env")) {
+    process.exit(0); // Already have native binary
+  }
 }
 
 fs.mkdirSync(binDir, { recursive: true });
 
 const url = `https://github.com/${REPO}/releases/download/v${VERSION}/${asset}`;
+const tmpPath = binPath + ".tmp";
 
-console.log(`  relay: Downloading binary for ${platform}...`);
+console.log(`  relay: Downloading ${asset}...`);
 
-function download(url, dest, redirects = 0) {
-  if (redirects > 5) {
-    console.log("  relay: Too many redirects. Build from source instead.");
-    writeSourceFallback();
-    return;
-  }
+try {
+  execFileSync("curl", [
+    "-sL", "--fail", "--max-time", "30",
+    "-o", tmpPath,
+    url,
+  ], { stdio: ["pipe", "pipe", "pipe"] });
 
-  https.get(url, { headers: { "User-Agent": "relay-npm" } }, (res) => {
-    if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-      download(res.headers.location, dest, redirects + 1);
-      return;
-    }
+  fs.renameSync(tmpPath, binPath);
+  fs.chmodSync(binPath, 0o755);
+  console.log(`  relay: Installed.`);
+} catch (e) {
+  // Clean up tmp
+  try { fs.unlinkSync(tmpPath); } catch {}
+  console.log(`  relay: Download failed. Binary not available for ${platform}.`);
+  console.log(`  relay: Build from source: git clone https://github.com/${REPO} && cd relay && ./scripts/build.sh`);
 
-    if (res.statusCode !== 200) {
-      console.log(`  relay: Download failed (HTTP ${res.statusCode}).`);
-      console.log(`  Build from source: cd node_modules/@masyv/relay/core && cargo build --release`);
-      writeSourceFallback();
-      return;
-    }
-
-    const file = fs.createWriteStream(dest);
-    res.pipe(file);
-    file.on("finish", () => {
-      file.close();
-      fs.chmodSync(dest, 0o755);
-      console.log(`  relay: Installed to ${dest}`);
-
-      // Write wrapper script for non-windows
-      if (process.platform !== "win32") {
-        fs.writeFileSync(wrapperPath, `#!/bin/sh\nexec "${binPath}" "$@"\n`);
-        fs.chmodSync(wrapperPath, 0o755);
-      }
-    });
-  }).on("error", () => {
-    console.log("  relay: Download failed. Build from source instead.");
-    writeSourceFallback();
-  });
+  // Write a helpful error script as fallback
+  const fallback = `#!/bin/sh\necho "relay binary not installed. Run: npm run postinstall"\nexit 1\n`;
+  fs.writeFileSync(binPath, fallback);
+  fs.chmodSync(binPath, 0o755);
 }
-
-function writeSourceFallback() {
-  fs.writeFileSync(
-    wrapperPath,
-    `#!/bin/sh\necho "relay binary not found. Build from source:"\necho "  cd node_modules/@masyv/relay/core && cargo build --release"\nexit 1\n`
-  );
-  fs.chmodSync(wrapperPath, 0o755);
-}
-
-download(url, binPath);

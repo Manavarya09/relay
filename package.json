@@ -1,6 +1,6 @@
 {
   "name": "relay-dev",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "When Claude Code hits its rate limit, another agent picks up exactly where you left off.",
   "bin": {
     "relay": "./bin/relay"
