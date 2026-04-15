@@ -82,8 +82,8 @@ Zero intervention. Relay monitors your session, detects the rate limit, and hand
 1. **Reads** `~/.claude/projects/<project>/<session>.jsonl` -- Claude's actual session transcript
 2. **Extracts** conversation turns, tool calls with results, errors, decisions, TodoWrite state
 3. **Captures** git branch, diff summary, uncommitted files, recent commits
-4. **Scores** each context section by relevance -- recency, error proximity, decision importance
-5. **Compresses** with priority-based truncation -- critical info always kept, low-value dropped first
+4. **Scores** each context section by relevance using the scoring engine -- task (100), error (95), recent conversation (85), git (80), decisions (70+), todos (50+), files (30)
+5. **Compresses** using score-driven budget allocation -- highest-scoring sections kept, lowest dropped first
 6. **Scans** for API keys, tokens, passwords, private keys before sending
 7. **Estimates** token count and cost for API agents
 8. **Chains** through agents in priority order until one succeeds
@@ -160,6 +160,13 @@ relay handoff --dry-run
 
 # Daemon mode -- auto-detects and hands off
 relay watch
+
+# Target a specific session (useful with multiple terminals)
+relay sessions                            # list all active sessions
+relay handoff --session abc123 --to codex # handoff a specific session
+
+# Disable chain fallback (only try the named agent)
+relay handoff --to codex --no-chain
 ```
 
 ---
@@ -189,6 +196,13 @@ If the first agent fails, Relay cascades to the next:
   [2] Trying gemini... API error (429)
   [3] Trying ollama... done
        Handed off to ollama
+```
+
+This also works when using `--to`:
+
+```bash
+relay handoff --to codex   # if codex fails, cascades to next agent
+relay handoff --to codex --no-chain   # strict: only try codex
 ```
 
 Works in daemon mode too. Complete resilience.
@@ -297,6 +311,31 @@ relay handoff --to codex --force
 
 ---
 
+## Multi-Session Support
+
+When running multiple Claude Code sessions across different terminals or projects, use `relay sessions` to pick which one to hand off:
+
+```bash
+relay sessions
+```
+
+```
+  Claude Code Sessions
+  ══════════════════════════════════════════════════
+  ID        Project                   Last Active   Turns
+  a1b2c3d4  ~/myproject               2 min ago     47
+  e5f6g7h8  ~/other-project           15 min ago    12
+  i9j0k1l2  ~/work/backend            1 hour ago    89
+```
+
+```bash
+relay handoff --session a1b2 --to codex
+```
+
+Session IDs support prefix matching -- the first 4-8 characters are usually enough.
+
+---
+
 ## Daemon Mode
 
 ```bash
@@ -325,6 +364,7 @@ The daemon polls Claude's transcript for new content, checks for rate limit sign
 | `relay clean` | Remove old handoff files |
 | `relay completions` | Shell completions (bash, zsh, fish) |
 | `relay plugin-new` | Scaffold a custom agent |
+| `relay sessions` | List available Claude Code sessions |
 | `relay init` | Generate default config |
 | `relay hook` | PostToolUse hook for auto-detection |
 
@@ -342,10 +382,24 @@ auto_handoff = true
 
 [agents.codex]
 model = "o4-mini"
+# binary = "/custom/path/to/codex"  # optional
+
+[agents.claude]
+resume = true                        # use --resume flag (default: true)
+# binary = "/custom/path/to/claude"  # optional
+
+[agents.aider]
+model = "sonnet"                     # default: "sonnet"
 
 [agents.gemini]
 api_key = "your-key"
 model = "gemini-2.5-pro"
+
+[agents.copilot]
+# binary = "/custom/path/to/copilot"  # optional
+
+[agents.opencode]
+# binary = "/custom/path/to/opencode" # optional
 
 [agents.openai]
 api_key = "your-key"
@@ -355,6 +409,8 @@ model = "gpt-4o"
 url = "http://localhost:11434"
 model = "llama3"
 ```
+
+All 8 agents are now configurable. Use custom binary paths, models, and API keys.
 
 ---
 
