@@ -6,11 +6,15 @@ use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
 
-#[derive(Default)]
-pub struct ClaudeAgent;
+pub struct ClaudeAgent {
+    binary: Option<String>,
+    resume: bool,
+}
 
 impl ClaudeAgent {
-    pub fn new() -> Self { Self }
+    pub fn new(config: &crate::ClaudeConfig) -> Self {
+        Self { binary: config.binary.clone(), resume: config.resume }
+    }
 }
 
 impl Agent for ClaudeAgent {
@@ -36,14 +40,16 @@ impl Agent for ClaudeAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = find_binary("claude").unwrap_or("claude".into());
+        let binary = self.binary.clone()
+            .or_else(|| find_binary("claude"))
+            .unwrap_or("claude".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 
-        // Launch Claude interactively with the handoff as initial prompt
-        let status = Command::new(&binary)
-            .current_dir(project_dir)
-            .arg("--resume")
+        let mut cmd = Command::new(&binary);
+        cmd.current_dir(project_dir);
+        if self.resume { cmd.arg("--resume"); }
+        let status = cmd
             .arg(handoff_prompt)
             .stdin(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())

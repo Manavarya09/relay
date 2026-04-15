@@ -5,11 +5,14 @@ use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
 
-#[derive(Default)]
-pub struct CopilotAgent;
+pub struct CopilotAgent {
+    binary: Option<String>,
+}
 
 impl CopilotAgent {
-    pub fn new() -> Self { Self }
+    pub fn new(config: &crate::CopilotConfig) -> Self {
+        Self { binary: config.binary.clone() }
+    }
 }
 
 impl Agent for CopilotAgent {
@@ -33,7 +36,9 @@ impl Agent for CopilotAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = find_binary("copilot").unwrap_or("copilot".into());
+        let binary = self.binary.clone()
+            .or_else(|| find_binary("copilot"))
+            .unwrap_or("copilot".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 

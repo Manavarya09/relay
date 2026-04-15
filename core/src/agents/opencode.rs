@@ -6,11 +6,14 @@ use crate::{AgentStatus, HandoffResult};
 use anyhow::Result;
 use std::process::Command;
 
-#[derive(Default)]
-pub struct OpenCodeAgent;
+pub struct OpenCodeAgent {
+    binary: Option<String>,
+}
 
 impl OpenCodeAgent {
-    pub fn new() -> Self { Self }
+    pub fn new(config: &crate::OpenCodeConfig) -> Self {
+        Self { binary: config.binary.clone() }
+    }
 }
 
 impl Agent for OpenCodeAgent {
@@ -36,7 +39,9 @@ impl Agent for OpenCodeAgent {
     }
 
     fn execute(&self, handoff_prompt: &str, project_dir: &str) -> Result<HandoffResult> {
-        let binary = find_binary("opencode").unwrap_or("opencode".into());
+        let binary = self.binary.clone()
+            .or_else(|| find_binary("opencode"))
+            .unwrap_or("opencode".into());
         let tmp = std::env::temp_dir().join("relay_handoff.md");
         std::fs::write(&tmp, handoff_prompt)?;
 
