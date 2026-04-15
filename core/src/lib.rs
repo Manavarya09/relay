@@ -75,7 +75,15 @@ pub struct AgentsConfig {
     #[serde(default)]
     pub codex: CodexConfig,
     #[serde(default)]
+    pub claude: ClaudeConfig,
+    #[serde(default)]
+    pub aider: AiderConfig,
+    #[serde(default)]
     pub gemini: GeminiConfig,
+    #[serde(default)]
+    pub copilot: CopilotConfig,
+    #[serde(default)]
+    pub opencode: OpenCodeConfig,
     #[serde(default)]
     pub ollama: OllamaConfig,
     #[serde(default)]
@@ -117,6 +125,30 @@ pub struct OpenAIConfig {
     pub model: String,
 }
 fn openai_default_model() -> String { "gpt-4o".into() }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ClaudeConfig {
+    pub binary: Option<String>,
+    #[serde(default = "default_true")]
+    pub resume: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AiderConfig {
+    #[serde(default = "aider_default_model")]
+    pub model: String,
+}
+fn aider_default_model() -> String { "sonnet".into() }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CopilotConfig {
+    pub binary: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct OpenCodeConfig {
+    pub binary: Option<String>,
+}
 
 impl Config {
     pub fn load() -> anyhow::Result<Self> {

@@ -11,10 +11,8 @@ pub struct AiderAgent {
 }
 
 impl AiderAgent {
-    pub fn new(model: Option<&str>) -> Self {
-        Self {
-            model: model.unwrap_or("sonnet").to_string(),
-        }
+    pub fn new(config: &crate::AiderConfig) -> Self {
+        Self { model: config.model.clone() }
     }
 }
 
