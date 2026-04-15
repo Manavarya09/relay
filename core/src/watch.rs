@@ -3,6 +3,8 @@
 
 use anyhow::Result;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 pub struct WatchConfig {
@@ -32,10 +34,19 @@ pub fn run_watch(
     );
     eprintln!("  Press Ctrl-C to stop.\n");
 
+    // Graceful shutdown via signal handler
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    }).ok();
+
+    let watch_start = Instant::now();
+    let mut handoff_count: u32 = 0;
     let mut last_handoff: Option<Instant> = None;
     let mut last_size: u64 = 0;
 
-    loop {
+    while running.load(Ordering::SeqCst) {
         std::thread::sleep(watch_config.poll_interval);
 
         // Find latest JSONL
@@ -106,6 +117,7 @@ pub fn run_watch(
         let result = handoff_with_chain(config, &handoff_text, &project_dir.to_string_lossy());
 
         if result.success {
+            handoff_count += 1;
             eprintln!("  \u{2705} Auto-handed off to {}", result.agent);
             if !handoff_path.as_os_str().is_empty() {
                 eprintln!("  \u{1f4c4} Saved: {}", handoff_path.display());
@@ -128,6 +140,14 @@ pub fn run_watch(
         last_handoff = Some(Instant::now());
         last_size = current_size;
     }
+
+    // Graceful shutdown summary
+    let elapsed = watch_start.elapsed();
+    eprintln!("\n  \u{1f6d1} Watch stopped.");
+    eprintln!("  Uptime: {}m {}s | Handoffs: {}",
+        elapsed.as_secs() / 60, elapsed.as_secs() % 60, handoff_count);
+
+    Ok(())
 }
 
 /// Handoff with chain — try each agent in priority order.

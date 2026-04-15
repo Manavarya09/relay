@@ -46,6 +46,9 @@ ureq = { version = "2", features = ["json"] }
 # Database
 rusqlite = { version = "0.31", features = ["bundled"] }
 
+# Signal handling
+ctrlc = "3"
+
 # Terminal UI
 colored = "2"
 indicatif = "0.17"
