@@ -1,0 +1,102 @@
+{
+  "name": "relay-vscode",
+  "displayName": "Relay — AI Agent Handoff",
+  "description": "Manage Claude Code session handoffs directly in VS Code",
+  "version": "0.1.0",
+  "publisher": "relay",
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other",
+    "Productivity"
+  ],
+  "keywords": [
+    "claude",
+    "ai",
+    "agent",
+    "handoff",
+    "codex",
+    "gemini"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "relay.showStatus",
+        "title": "Relay: Show Session Status"
+      },
+      {
+        "command": "relay.handoff",
+        "title": "Relay: Handoff to Agent"
+      },
+      {
+        "command": "relay.history",
+        "title": "Relay: View Handoff History"
+      },
+      {
+        "command": "relay.copyHandoff",
+        "title": "Relay: Copy Handoff to Clipboard"
+      },
+      {
+        "command": "relay.viewDiff",
+        "title": "Relay: View Diff Since Handoff"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "relay.sessionPanel",
+          "name": "Relay Session",
+          "when": "relay:hasRelayBinary"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "relay.sessionPanel",
+        "contents": "Relay binary not found.\nMake sure you have installed Relay:\n[Install Instructions](https://github.com/Manavarya09/relay#quick-start)"
+      }
+    ],
+    "statusBar": [
+      {
+        "id": "relay.status",
+        "alignment": "left",
+        "priority": 100
+      }
+    ],
+    "configuration": {
+      "title": "Relay",
+      "properties": {
+        "relay.binaryPath": {
+          "type": "string",
+          "default": "relay",
+          "description": "Path to the relay binary (default: uses PATH)"
+        },
+        "relay.autoRefreshInterval": {
+          "type": "number",
+          "default": 5000,
+          "description": "Auto-refresh session status interval in milliseconds (0 to disable)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.84.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
