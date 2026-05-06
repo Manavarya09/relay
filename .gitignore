@@ -1,7 +1,42 @@
-core/target/
-*.db
-.DS_Store
-*.swp
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+
+# Node
+node_modules/
+.pnp.*
+.yarn/
+
+# Build output
+dist/
+build/
+out/
+.next/
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor
 .vscode/
 .idea/
-.relay/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Misc
+*.tsbuildinfo
+.cache/
+coverage/
