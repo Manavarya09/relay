@@ -490,3 +490,8 @@ MIT
 ---
 
 Built by [@masyv](https://github.com/Manavarya09)
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Manavarya09/relay&type=Date)](https://star-history.com/#Manavarya09/relay&Date)
