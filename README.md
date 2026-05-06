@@ -1,5 +1,11 @@
 # Relay
 
+[![License: MIT](https://img.shields.io/github/license/Manavarya09/relay?color=0a0a0a)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Manavarya09/relay?style=flat&color=0a0a0a)](https://github.com/Manavarya09/relay/stargazers)
+[![Issues](https://img.shields.io/github/issues/Manavarya09/relay?color=0a0a0a)](https://github.com/Manavarya09/relay/issues)
+[![Last commit](https://img.shields.io/github/last-commit/Manavarya09/relay?color=0a0a0a)](https://github.com/Manavarya09/relay/commits/main)
+
+
 **When Claude Code hits its rate limit, another agent picks up exactly where you left off.**
 
 [![CI](https://github.com/Manavarya09/relay/actions/workflows/ci.yml/badge.svg)](https://github.com/Manavarya09/relay/actions)
