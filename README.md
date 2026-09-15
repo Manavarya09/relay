@@ -489,7 +489,7 @@ MIT
 
 ---
 
-Built by [@masyv](https://github.com/Manavarya09)
+Built by [Manav Arya Singh](https://www.manavaryasingh.com) ([@Manavarya09](https://github.com/Manavarya09))
 
 
 ## Star History
