@@ -15,8 +15,13 @@ pub fn estimate_tokens(text: &str, model: &str) -> usize {
     (chars as f64 / ratio).ceil() as usize
 }
 
-/// Pricing per 1M input tokens (USD) as of 2026.
+/// Pricing per 1M input tokens (USD).
+/// Known model ids come from the `llm-prices` table; anything it doesn't
+/// recognise (dated ids, local models) falls back to the substring match below.
 fn price_per_million_input(model: &str) -> f64 {
+    if let Some(input) = llm_prices::lookup(model).and_then(|p| p.input) {
+        return input;
+    }
     match model {
         m if m.contains("gpt-4o") => 2.50,
         m if m.contains("gpt-5.4") => 5.00,
@@ -29,11 +34,17 @@ fn price_per_million_input(model: &str) -> f64 {
     }
 }
 
+/// Pricing per 1M output tokens (USD), when the model is in the `llm-prices` table.
+fn price_per_million_output(model: &str) -> Option<f64> {
+    llm_prices::lookup(model).and_then(|p| p.output)
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct CostEstimate {
     pub tokens: usize,
     pub model: String,
     pub estimated_cost_usd: f64,
+    pub output_price_per_million: Option<f64>,
     pub is_free: bool,
 }
 
@@ -48,6 +59,7 @@ pub fn estimate_cost(text: &str, agent: &str, model: &str) -> CostEstimate {
         tokens,
         model: model.to_string(),
         estimated_cost_usd: cost,
+        output_price_per_million: price_per_million_output(model),
         is_free,
     }
 }
@@ -55,11 +67,16 @@ pub fn estimate_cost(text: &str, agent: &str, model: &str) -> CostEstimate {
 /// Format cost for display.
 pub fn format_cost(estimate: &CostEstimate) -> String {
     if estimate.is_free {
-        format!("~{} tokens (free — local/CLI agent)", estimate.tokens)
-    } else if estimate.estimated_cost_usd < 0.01 {
-        format!("~{} tokens (<$0.01 on {})", estimate.tokens, estimate.model)
+        return format!("~{} tokens (free — local/CLI agent)", estimate.tokens);
+    }
+    let output = match estimate.output_price_per_million {
+        Some(price) => format!(", plus output at ${:.2}/1M", price),
+        None => String::new(),
+    };
+    if estimate.estimated_cost_usd < 0.01 {
+        format!("~{} tokens (<$0.01 on {}{})", estimate.tokens, estimate.model, output)
     } else {
-        format!("~{} tokens (~${:.3} on {})", estimate.tokens, estimate.estimated_cost_usd, estimate.model)
+        format!("~{} tokens (~${:.3} on {}{})", estimate.tokens, estimate.estimated_cost_usd, estimate.model, output)
     }
 }
 
@@ -94,5 +111,27 @@ mod tests {
         let est = estimate_cost("test", "codex", "o4-mini");
         let fmt = format_cost(&est);
         assert!(fmt.contains("free"));
+    }
+
+    #[test]
+    fn known_models_use_listed_prices() {
+        assert_eq!(price_per_million_input("gpt-4.1"), 2.0);
+        assert_eq!(price_per_million_input("gpt-5.4"), 2.5);
+        assert_eq!(price_per_million_input("gemini-2.5-flash"), 0.3);
+        assert_eq!(price_per_million_output("gpt-4o"), Some(10.0));
+    }
+
+    #[test]
+    fn unknown_ids_fall_back_to_substring_match() {
+        assert_eq!(price_per_million_input("gpt-4o-2024-08-06"), 2.50);
+        assert_eq!(price_per_million_input("llama3"), 0.0);
+        assert_eq!(price_per_million_output("llama3"), None);
+    }
+
+    #[test]
+    fn format_shows_output_price() {
+        let text = "a".repeat(35000);
+        let est = estimate_cost(&text, "openai", "gpt-4o");
+        assert!(format_cost(&est).contains("output at $10.00/1M"));
     }
 }
