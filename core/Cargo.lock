@@ -710,6 +710,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
+name = "llm-prices"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9606d5d2a074a2de43ae1e9d76ffdb95e5ffb870533b89caccaa4aa2d4abf2d6"
+
+[[package]]
 name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -913,6 +919,7 @@ dependencies = [
  "ctrlc",
  "dialoguer",
  "indicatif",
+ "llm-prices",
  "regex",
  "rusqlite",
  "serde",

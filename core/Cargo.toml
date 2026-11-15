@@ -43,6 +43,9 @@ blake3 = "1"
 # HTTP client (for Ollama, OpenAI, Gemini APIs)
 ureq = { version = "2", features = ["json"] }
 
+# LLM API pricing table (used by cost estimates)
+llm-prices = "1.1"
+
 # Database
 rusqlite = { version = "0.31", features = ["bundled"] }
 
